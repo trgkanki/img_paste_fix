@@ -1,6 +1,6 @@
 {
   "name": "img_paste_fix",
-  "version": "20.5.4i8",
+  "version": "25.6.14i51",
   "description": "template for trgkanki's addon",
   "scripts": {
     "postinstall": "python3 -m pip install -r requirements.txt",

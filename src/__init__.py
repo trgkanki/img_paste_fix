@@ -15,7 +15,7 @@
 
 # -*- coding: utf-8 -*-
 #
-# img_paste_fix v20.5.4i8
+# img_paste_fix v25.6.14i51
 #
 # Copyright: trgk (phu54321@naver.com)
 # License: GNU AGPL, version 3 or later;

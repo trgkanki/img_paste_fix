@@ -70,8 +70,15 @@ def processSingleImageHtml(
             else:
                 image_html = self._processImage(original_mime, extended)
                 if image_html:
-                    mime = QMimeData()
-                    mime.setHtml(image_html)
+                    img_tag_2 = single_image_html_parse(image_html)
+                    if img_tag_2:
+                        img_tag["src"] = img_tag_2["src"]
+                        mime = QMimeData()
+                        mime.setHtml(str(img_tag))
+
+                    else:
+                        mime = QMimeData()
+                        mime.setHtml(image_html)
                     return mime
 
     return original_mime

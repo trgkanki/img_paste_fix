@@ -21,17 +21,60 @@
 # License: GNU AGPL, version 3 or later;
 # See http://www.gnu.org/licenses/agpl.html
 
-from aqt.editor import Editor
-from anki.hooks import wrap
-from aqt.utils import askUser
+from aqt.editor import EditorWebView
+from aqt.qt import QMimeData
+from aqt import gui_hooks
 
 from .utils import openChangelog
 from .utils import uuid  # duplicate UUID checked here
 from .utils import debugLog  # debug log registered here
 
-
-def onLoadNote(self, focusTo=None):
-    pass
+from .html_parser.single_image_html_parse import single_image_html_parse
 
 
-Editor.loadNote = wrap(Editor.loadNote, onLoadNote, "after")
+def processSingleImageHtml(
+    original_mime: QMimeData, self: EditorWebView, _internal, extended, _drop_event
+):
+    if not original_mime.hasHtml():
+        return original_mime
+
+    html_content = original_mime.html()
+
+    # Unwraps fragment data.
+    try:
+        html_content = html_content[
+            html_content.index("<!--StartFragment-->")
+            + 20 : html_content.rindex("<!--EndFragment-->")
+        ]
+        if not html_content:
+            # maybe malformed html?
+            return original_mime
+    except ValueError:
+        return original_mime
+
+    img_tag = single_image_html_parse(html_content)
+    if img_tag:
+        try:
+            src = img_tag["src"]
+        except KeyError:
+            return original_mime
+
+        if self.editor.isURL(src):
+            fname = self.editor._retrieveURL(src)
+            if fname:
+                img_tag["src"] = fname
+                mime = QMimeData()
+                mime.setHtml(str(img_tag))
+                return mime
+
+            else:
+                image_html = self._processImage(original_mime, extended)
+                if image_html:
+                    mime = QMimeData()
+                    mime.setHtml(image_html)
+                    return mime
+
+    return None
+
+
+gui_hooks.editor_will_process_mime.append(processSingleImageHtml)

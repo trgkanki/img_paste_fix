@@ -74,7 +74,7 @@ def processSingleImageHtml(
                     mime.setHtml(image_html)
                     return mime
 
-    return None
+    return original_mime
 
 
 gui_hooks.editor_will_process_mime.append(processSingleImageHtml)

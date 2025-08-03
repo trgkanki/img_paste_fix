@@ -25,11 +25,38 @@ from aqt.editor import EditorWebView
 from aqt.qt import QMimeData
 from aqt import gui_hooks
 
+
 from .utils import openChangelog
 from .utils import uuid  # duplicate UUID checked here
-from .utils import debugLog  # debug log registered here
+from .utils.debugLog import log  # debug log registered here
 
 from .html_parser.single_image_html_parse import single_image_html_parse
+
+from typing import Optional
+import re
+
+
+def _extractSingleImageFragment(html: str) -> Optional[str]:
+    # Windows MIME uses fragment
+    try:
+        html_stripped = html[
+            html.index("<!--StartFragment-->") + 20 : html.rindex("<!--EndFragment-->")
+        ]
+        if not html_stripped:
+            # maybe malformed html?
+            return None
+        return html_stripped
+    except ValueError:
+        pass
+
+    # macOS MIME uses single <img> tag followed by <meta>
+    # <meta charset='utf-8'><img src="....">
+    macOS_single_image_regex = (
+        r"""^<meta charset=["']utf-8['"]>(<img\b(?:[^>"']+|"[^"]*"|'[^']*')*?>)$"""
+    )
+    m = re.match(macOS_single_image_regex, html)
+    if m:
+        return m.group(1)
 
 
 def processSingleImageHtml(
@@ -41,15 +68,8 @@ def processSingleImageHtml(
     html_content = original_mime.html()
 
     # Unwraps fragment data.
-    try:
-        html_content = html_content[
-            html_content.index("<!--StartFragment-->")
-            + 20 : html_content.rindex("<!--EndFragment-->")
-        ]
-        if not html_content:
-            # maybe malformed html?
-            return original_mime
-    except ValueError:
+    html_content = _extractSingleImageFragment(html_content)
+    if not html_content:
         return original_mime
 
     img_tag = single_image_html_parse(html_content)
